@@ -1,7 +1,7 @@
 package main
 
 import (
-	"agoraservice"
+	"agora.io/agoraservice"
 	"fmt"
 	"os"
 	"time"

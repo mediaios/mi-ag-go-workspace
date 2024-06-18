@@ -9,7 +9,7 @@ import (
 
 func main() {
 	svcCfg := agoraservice.AgoraServiceConfig{
-		AppId: APPID,
+		AppId: "20338919f2ca4af4b1d7ec23d8870b56",
 	}
 	agoraservice.Init(&svcCfg)
 	conCfg := agoraservice.RtcConnectionConfig{

@@ -65,22 +65,33 @@ func main() {
 		SampleRate:        16000,
 	}
 
-	file, err := os.Open("resources/demo.pcm")
+	file, err := os.Open("../test_data/demo.pcm")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return
 	}
 	defer file.Close()
 
+	sender.AdjustVolume(40)
+	sender.SetSendBufferSize(1000)
+
+	bStop := false
 	for {
-		dataLen, err := file.Read(frame.Data)
-		if err != nil || dataLen < 320 {
-			fmt.Println("Finished reading file:", err)
+		// send 100ms audio data
+		for i := 0; i < 10; i++ {
+			dataLen, err := file.Read(frame.Data)
+			if err != nil || dataLen < 320 {
+				fmt.Println("Finished reading file:", err)
+				bStop = true
+				break
+			}
+
+			sender.SendPcmData(&frame)
+		}
+		if bStop {
 			break
 		}
-
-		sender.SendPcmData(&frame)
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(90 * time.Millisecond)
 	}
 	sender.Stop()
 	con.Disconnect()

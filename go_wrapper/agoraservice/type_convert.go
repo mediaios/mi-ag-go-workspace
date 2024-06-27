@@ -1,8 +1,9 @@
 package agoraservice
 
 /*
-#cgo CFLAGS: -I../../agora_sdk/include_c/api2 -I../../agora_sdk/include_c/base
-#cgo LDFLAGS: -L../../agora_sdk/ -lagora_rtc_sdk -lagora-fdkaac -lagora-ffmpeg
+#cgo CFLAGS: -I${SRCDIR}/../../agora_sdk/include_c/api2 -I${SRCDIR}/../../agora_sdk/include_c/base
+#cgo darwin arm64 LDFLAGS: -L../../agora_sdk_mac/arm64 -lAgoraRtcKit -lAgorafdkaac -lAgoraffmpeg
+#cgo linux LDFLAGS: -L../../agora_sdk/ -lagora_rtc_sdk -lagora-fdkaac -lagora-core
 
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +25,7 @@ func CAgoraServiceConfig(cfg *AgoraServiceConfig) *C.struct__agora_service_confi
 	ret.enable_audio_device = C.int(0)
 	ret.enable_audio_processor = C.int(1)
 	ret.enable_video = C.int(1)
+	ret.audio_scenario = C.int(cfg.AudioScenario)
 	return ret
 }
 

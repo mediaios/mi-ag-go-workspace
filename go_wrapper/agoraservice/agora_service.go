@@ -1,22 +1,54 @@
 package agoraservice
 
-/*
-#cgo CFLAGS: -I../../agora_sdk/include_c/api2 -I../../agora_sdk/include_c/base
-#cgo LDFLAGS: -L../../agora_sdk/ -lagora_rtc_sdk -lagora-fdkaac -lagora-ffmpeg
-
-#include "agora_local_user.h"
-#include "agora_rtc_conn.h"
-#include "agora_service.h"
-#include "agora_media_base.h"
-*/
+// #cgo CFLAGS: -I${SRCDIR}/../../agora_sdk/include_c/api2 -I${SRCDIR}/../../agora_sdk/include_c/base
+// #cgo darwin arm64 LDFLAGS: -L../../agora_sdk_mac/arm64 -lAgoraRtcKit -lAgorafdkaac -lAgoraffmpeg
+// #cgo linux LDFLAGS: -L../../agora_sdk/ -lagora_rtc_sdk -lagora-fdkaac -lagora-core
+// #include "agora_local_user.h"
+// #include "agora_rtc_conn.h"
+// #include "agora_service.h"
+// #include "agora_media_base.h"
 import "C"
 import (
 	"sync"
 	"unsafe"
 )
 
+const (
+	/**
+	 * 0: (Recommended) The default audio scenario.
+	 */
+	AUDIO_SCENARIO_DEFAULT = 0
+	/**
+	 * 3: (Recommended) The live gaming scenario, which needs to enable gaming
+	 * audio effects in the speaker. Choose this scenario to achieve high-fidelity
+	 * music playback.
+	 */
+	AUDIO_SCENARIO_GAME_STREAMING = 3
+	/**
+	 * 5: The chatroom scenario, which needs to keep recording when setClientRole to audience.
+	 * Normally, app developer can also use mute api to achieve the same result,
+	 * and we implement this 'non-orthogonal' behavior only to make API backward compatible.
+	 */
+	AUDIO_SCENARIO_CHATROOM = 5
+	/**
+	 * 7: Chorus
+	 */
+	AUDIO_SCENARIO_CHORUS = 7
+	/**
+	 * 8: Meeting
+	 */
+	AUDIO_SCENARIO_MEETING = 8
+	/**
+	 * 9: Reserved.
+	 */
+	AUDIO_SCENARIO_NUM = 9
+)
+
 type AgoraServiceConfig struct {
-	AppId string
+	AppId         string
+	AudioScenario int
+	LogPath       string
+	LogSize       int
 }
 
 type AgoraService struct {
@@ -64,10 +96,16 @@ func Init(cfg *AgoraServiceConfig) int {
 
 	agoraService.mediaFactory = C.agora_service_create_media_node_factory(agoraService.service)
 
-	logPath := C.CString("./io.agora.rtc_sdk/agorasdk.log")
-	defer C.free(unsafe.Pointer(logPath))
-	C.agora_service_set_log_file(agoraService.service, logPath,
-		C.uint(512*1024))
+	if cfg.LogPath != "" {
+		logPath := C.CString(cfg.LogPath)
+		defer C.free(unsafe.Pointer(logPath))
+		logSize := 512 * 1024
+		if cfg.LogSize > 0 {
+			logSize = cfg.LogSize
+		}
+		C.agora_service_set_log_file(agoraService.service, logPath,
+			C.uint(logSize))
+	}
 	agoraService.inited = true
 	return 0
 }

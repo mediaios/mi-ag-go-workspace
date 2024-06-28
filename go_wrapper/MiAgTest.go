@@ -65,7 +65,7 @@ func main() {
 		SampleRate:        16000,
 	}
 
-	file, err := os.Open("../test_data/demo.pcm")
+	file, err := os.Open("./test_data/demo.pcm")
 	if err != nil {
 		fmt.Println("Error opening file:", err)
 		return

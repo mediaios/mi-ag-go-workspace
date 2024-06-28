@@ -109,7 +109,7 @@ func main() {
 
 		audioReader := bufio.NewReaderSize(audioOut, 8192) // 增大缓冲区大小
 		for {
-			dataLen, err := io.ReadFull(audioReader, audioFrame.Data)
+			_, err := io.ReadFull(audioReader, audioFrame.Data)
 			if err != nil {
 				if err == io.EOF {
 					fmt.Println("Audio data read complete")
@@ -119,14 +119,8 @@ func main() {
 				break
 			}
 
-			if dataLen < len(audioFrame.Data) {
-				fmt.Println("Incomplete audio frame, filling with silence")
-				for i := dataLen; i < len(audioFrame.Data); i++ {
-					audioFrame.Data[i] = 0
-				}
-			}
-
 			sender.SendPcmData(&audioFrame)
+
 
 			time.Sleep(20 * time.Millisecond) // 控制发送频率，每隔20毫秒发送一次
 		}

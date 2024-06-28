@@ -47,7 +47,7 @@ func main() {
 	<-conSignal
 	sender.Start()
 
-	frame := agoraservice.PcmAudioFrame{
+	audioFrame := agoraservice.PcmAudioFrame{
 		Data:              make([]byte, 1920),
 		Timestamp:         0,
 		SamplesPerChannel: 480,
@@ -122,7 +122,7 @@ func main() {
 		//buf := make([]byte, 4096) // 根据需要调整缓冲区大小
 		audioReader := bufio.NewReader(audioOut)
 		for {
-			n, err := audioReader.Read(frame.Data)
+			n, err := audioReader.Read(audioFrame.Data)
 			if err != nil {
 				if err == io.EOF {
 					fmt.Println("Audio data read complete")
@@ -132,7 +132,10 @@ func main() {
 				break
 			}
 			// 处理一段音频数据
-			handleAudioFrame(frame.Data[:n], sender, frame)
+
+			sender.SendPcmData(&audioFrame);
+			
+			//handleAudioFrame(frame.Data[:n], sender, frame)
 		}
 	}()
 
@@ -164,18 +167,6 @@ func handleVideoFrame(frame []byte) {
 	fmt.Println("Received a video frame")
 }
 
-// 处理音频帧的回调函数
-// 处理音频帧的回调函数
-func handleAudioFrame(frame []byte, sender *agoraservice.PcmSender, pcmFrame agoraservice.PcmAudioFrame) {
-	// 在这里处理每一帧音频数据
-	fmt.Println("Received an audio frame")
-
-	// 更新帧数据
-	pcmFrame.Data = frame
-
-
-	sender.SendPcmData(&pcmFrame);
-}
 
 // 打印 FFmpeg 的错误输出
 func printFFmpegErrorOutput(reader *bufio.Reader) {

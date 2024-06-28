@@ -98,25 +98,6 @@ func main() {
 		return
 	}
 
-	//// 处理视频数据
-	//go func() {
-	//	frameSize := 640 * 360 * 3 / 2 // 假设 YUV420P 格式和 1080p 分辨率
-	//	videoReader := bufio.NewReader(videoOut)
-	//	for {
-	//		buf := make([]byte, frameSize)
-	//		_, err := io.ReadFull(videoReader, buf)
-	//		if err != nil {
-	//			if err == io.EOF {
-	//				fmt.Println("Video data read complete")
-	//			} else {
-	//				fmt.Printf("Error reading video data: %v\n", err)
-	//			}
-	//			break
-	//		}
-	//		// 处理一帧视频数据
-	//		handleVideoFrame(buf)
-	//	}
-	//}()
 
 	// 处理音频数据
 	go func() {
@@ -148,11 +129,8 @@ func main() {
 				}
 			}
 
-			err = sender.SendPcmData(&audioFrame)
-			if err != nil {
-				fmt.Printf("Error sending audio data: %v\n", err)
-				break
-			}
+			sender.SendPcmData(&audioFrame)
+
 		}
 	}()
 

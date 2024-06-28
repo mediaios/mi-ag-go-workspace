@@ -133,11 +133,7 @@ func main() {
 			if len(buffer) >= 19200 { // 当缓冲区有10帧数据时，发送出去
 				for i := 0; i < 10; i++ {
 					copy(audioFrame.Data, buffer[i*1920:(i+1)*1920])
-					err := sender.SendPcmData(&audioFrame)
-					if err != nil {
-						fmt.Printf("Error sending audio data: %v\n", err)
-						return
-					}
+					sender.SendPcmData(&audioFrame)
 				}
 				buffer = buffer[19200:] // 清理已发送的数据
 			}

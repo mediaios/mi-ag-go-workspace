@@ -151,9 +151,9 @@ func main() {
 
 	// 读取并打印 FFmpeg 的错误输出
 	go func() {
-		videoErrReader := bufio.NewReader(videoErr)
+		//videoErrReader := bufio.NewReader(videoErr)
 		audioErrReader := bufio.NewReader(audioErr)
-		printFFmpegErrorOutput(videoErrReader)
+		//printFFmpegErrorOutput(videoErrReader)
 		printFFmpegErrorOutput(audioErrReader)
 	}()
 

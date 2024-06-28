@@ -6,9 +6,58 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"agora.io/agoraservice"
 )
 
 func main() {
+	svcCfg := agoraservice.AgoraServiceConfig{
+		APPID:"20338919f2ca4af4b1d7ec23d8870b56",
+	}
+	agoraservice.Init(svcCfg)
+	conCfg := agoraservice.RtcConnectionConfig{
+		SubAudio:		false,
+		subVideo:		false,
+		ClientRole:		1,
+		ChannelProfile:	1,
+	}
+	connHandler := agoraservice.RtcConnectionEventHandler{
+		OnConnected: func(con *agoraservice.RtcConnection, info *agoraservice.RtcConnectionInfo, reason int) {
+			// do something
+			fmt.Println("Connected")
+			conSignal <- struct{}{}
+		},
+		OnDisconnected: func(con *agoraservice.RtcConnection, info *agoraservice.RtcConnectionInfo, reason int) {
+			// do something
+			fmt.Println("Disconnected")
+		},
+		OnUserJoined: func(con *agoraservice.RtcConnection, uid string) {
+			fmt.Println("user joined, " + uid)
+		},
+		OnUserLeft: func(con *agoraservice.RtcConnection, uid string, reason int) {
+			fmt.Println("user left, " + uid)
+		},
+	}
+	conCfg.ConnectionHandler = &connHandler
+	con := agoraservice.NewConnection(&conCfg)
+	defer con.Release()
+	sender := con.NewPcmSender()
+	defer sender.Release()
+	con.Connect("", "qitest", "0")
+	<-conSignal
+	sender.Start()
+
+	frame := agoraservice.PcmAudioFrame{
+		Data:              make([]byte, 1920),
+		Timestamp:         0,
+		SamplesPerChannel: 480,
+		BytesPerSample:    2,
+		NumberOfChannels:  2,
+		SampleRate:        48000,
+	}
+	sender.SetSendBufferSize(1000)
+
+
+
 	inputFile := "./test_data/sony_640.mp4"
 
 	// 启动FFmpeg进程以分离视频数据
@@ -72,7 +121,7 @@ func main() {
 		buf := make([]byte, 4096) // 根据需要调整缓冲区大小
 		audioReader := bufio.NewReader(audioOut)
 		for {
-			n, err := audioReader.Read(buf)
+			n, err := audioReader.Read(frame.Data)
 			if err != nil {
 				if err == io.EOF {
 					fmt.Println("Audio data read complete")
@@ -82,7 +131,7 @@ func main() {
 				break
 			}
 			// 处理一段音频数据
-			handleAudioFrame(buf[:n])
+			handleAudioFrame(frame.Data[:n], sender, frame)
 		}
 	}()
 
@@ -100,6 +149,11 @@ func main() {
 	}
 	if err := audioCmd.Wait(); err != nil {
 		fmt.Printf("Audio FFmpeg process finished with error: %v\n", err)
+
+		sender.Stop()
+		con.Disconnect()
+
+		agoraservice.Destroy()
 	}
 }
 
@@ -110,9 +164,18 @@ func handleVideoFrame(frame []byte) {
 }
 
 // 处理音频帧的回调函数
-func handleAudioFrame(frame []byte) {
+// 处理音频帧的回调函数
+func handleAudioFrame(frame []byte, sender *agoraservice.PcmSender, pcmFrame agoraservice.PcmAudioFrame) {
 	// 在这里处理每一帧音频数据
 	fmt.Println("Received an audio frame")
+
+	// 更新帧数据
+	pcmFrame.Data = frame
+
+	// 发送到 Agora 服务
+	if err := sender.SendPcmData(&pcmFrame); err != nil {
+		fmt.Printf("Error sending audio frame: %v\n", err)
+	}
 }
 
 // 打印 FFmpeg 的错误输出

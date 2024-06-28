@@ -7,6 +7,7 @@ import (
 	"io"
 	"os/exec"
 	"agora.io/agoraservice"
+	"time"
 )
 
 func main() {
@@ -139,6 +140,7 @@ func main() {
 			}
 
 			sender.SendPcmData(&audioFrame);
+			time.Sleep(90 * time.Millisecond)
 
 			//handleAudioFrame(frame.Data[:n], sender, frame)
 		}

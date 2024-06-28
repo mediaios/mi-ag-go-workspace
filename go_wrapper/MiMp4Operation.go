@@ -134,13 +134,14 @@ func main() {
 			}
 
 			// 检查读取的数据长度是否符合预期
+			fmt.Println("dataLen: %d",dataLen)
 			if dataLen < len(audioFrame.Data) {
-				fmt.Println("Incomplete audio frame")
+				//fmt.Println("Incomplete audio frame")
 				//break
 			}
 
 			sender.SendPcmData(&audioFrame);
-			time.Sleep(90 * time.Millisecond)
+			//time.Sleep(90 * time.Millisecond)
 
 			//handleAudioFrame(frame.Data[:n], sender, frame)
 		}

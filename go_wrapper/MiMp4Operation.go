@@ -107,7 +107,7 @@ func main() {
 			agoraservice.Destroy()
 		}()
 
-		audioReader := bufio.NewReaderSize(audioOut, 32768)
+		audioReader := bufio.NewReaderSize(audioOut, 8192)
 		for {
 			_, err := io.ReadFull(audioReader, audioFrame.Data)
 			if err != nil {

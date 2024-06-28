@@ -126,7 +126,7 @@ func main() {
 			agoraservice.Destroy()
 		}()
 
-		audioReader := bufio.NewReaderSize(audioOut, 4096) // 增加缓冲区大小
+		audioReader := bufio.NewReaderSize(audioOut, 16384) // 增加缓冲区大小
 		for {
 			dataLen, err := io.ReadFull(audioReader, audioFrame.Data)
 			if err != nil {
@@ -148,7 +148,7 @@ func main() {
 			}
 
 			sender.SendPcmData(&audioFrame)
-			time.Sleep(10 * time.Millisecond) // 控制发送频率，每隔10毫秒发送一次
+			time.Sleep(8 * time.Millisecond) // 控制发送频率，每隔10毫秒发送一次
 		}
 	}()
 

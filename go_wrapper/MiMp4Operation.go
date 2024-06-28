@@ -110,6 +110,7 @@ func main() {
 		audioReader := bufio.NewReaderSize(audioOut, 8192)
 		frameDuration := time.Duration(float64(time.Second) * float64(audioFrame.SamplesPerChannel) / float64(audioFrame.SampleRate))
 		nextFrameTime := time.Now()
+
 		for {
 			_, err := io.ReadFull(audioReader, audioFrame.Data)
 			if err != nil {
@@ -121,7 +122,13 @@ func main() {
 				break
 			}
 
-			// 控制帧发送的时间间隔
+			// 简单的去噪处理: 将静音阈值以下的值置为零
+			for i := range audioFrame.Data {
+				if audioFrame.Data[i] < 10 {
+					audioFrame.Data[i] = 0
+				}
+			}
+
 			time.Sleep(time.Until(nextFrameTime))
 			audioFrame.Timestamp = int64(time.Since(nextFrameTime) / time.Millisecond)
 			sender.SendPcmData(&audioFrame)

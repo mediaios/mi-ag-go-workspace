@@ -120,33 +120,62 @@ func main() {
 
 	// 处理音频数据
 	go func() {
-		//buf := make([]byte, 4096) // 根据需要调整缓冲区大小
+
 		audioReader := bufio.NewReader(audioOut)
+		timer := time.NewTicker(10 * time.Millisecond)
+		defer timer.Stop()
+
 		for {
-			dataLen, err := audioReader.Read(audioFrame.Data)
-			if err != nil {
-				if err == io.EOF {
-					fmt.Println("Audio data read complete")
-				} else {
-					fmt.Printf("Error reading audio data: %v\n", err)
+			select {
+			case <-timer.C:
+				dataLen, err := audioReader.Read(audioFrame.Data)
+				if err != nil {
+					if err == io.EOF {
+						fmt.Println("Audio data read complete")
+					} else {
+						fmt.Printf("Error reading audio data: %v\n", err)
+					}
+					break
 				}
-				break
-			}
 
-			// 检查读取的数据长度是否符合预期
-			fmt.Println("dataLen: %d",dataLen)
-			if dataLen < len(audioFrame.Data) {
-				fmt.Println("Incomplete audio frame, filling with silence")
-				for i := dataLen; i < len(audioFrame.Data); i++ {
-					audioFrame.Data[i] = 0 // 填充静音
+				if dataLen < len(audioFrame.Data) {
+					fmt.Println("Incomplete audio frame")
+					break
 				}
+
+				sender.SendPcmData(&audioFrame)
 			}
-
-			sender.SendPcmData(&audioFrame);
-			time.Sleep(10 * time.Millisecond)
-
-			//handleAudioFrame(frame.Data[:n], sender, frame)
 		}
+
+
+
+		////buf := make([]byte, 4096) // 根据需要调整缓冲区大小
+		//audioReader := bufio.NewReader(audioOut)
+		//for {
+		//	dataLen, err := audioReader.Read(audioFrame.Data)
+		//	if err != nil {
+		//		if err == io.EOF {
+		//			fmt.Println("Audio data read complete")
+		//		} else {
+		//			fmt.Printf("Error reading audio data: %v\n", err)
+		//		}
+		//		break
+		//	}
+		//
+		//	// 检查读取的数据长度是否符合预期
+		//	fmt.Println("dataLen: %d",dataLen)
+		//	if dataLen < len(audioFrame.Data) {
+		//		fmt.Println("Incomplete audio frame, filling with silence")
+		//		for i := dataLen; i < len(audioFrame.Data); i++ {
+		//			audioFrame.Data[i] = 0 // 填充静音
+		//		}
+		//	}
+		//
+		//	sender.SendPcmData(&audioFrame);
+		//	time.Sleep(10 * time.Millisecond)
+		//
+		//	//handleAudioFrame(frame.Data[:n], sender, frame)
+		//}
 	}()
 
 	// 读取并打印 FFmpeg 的错误输出

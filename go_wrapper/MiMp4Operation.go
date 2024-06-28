@@ -88,11 +88,11 @@ func main() {
 		return
 	}
 
-	// 启动FFmpeg进程
-	if err := videoCmd.Start(); err != nil {
-		fmt.Printf("Error starting video FFmpeg process: %v\n", err)
-		return
-	}
+	//// 启动FFmpeg进程
+	//if err := videoCmd.Start(); err != nil {
+	//	fmt.Printf("Error starting video FFmpeg process: %v\n", err)
+	//	return
+	//}
 	if err := audioCmd.Start(); err != nil {
 		fmt.Printf("Error starting audio FFmpeg process: %v\n", err)
 		return
@@ -157,10 +157,10 @@ func main() {
 		printFFmpegErrorOutput(audioErrReader)
 	}()
 
-	// 等待 FFmpeg 进程完成
-	if err := videoCmd.Wait(); err != nil {
-		fmt.Printf("Video FFmpeg process finished with error: %v\n", err)
-	}
+	//// 等待 FFmpeg 进程完成
+	//if err := videoCmd.Wait(); err != nil {
+	//	fmt.Printf("Video FFmpeg process finished with error: %v\n", err)
+	//}
 	if err := audioCmd.Wait(); err != nil {
 		fmt.Printf("Audio FFmpeg process finished with error: %v\n", err)
 
@@ -171,11 +171,11 @@ func main() {
 	}
 }
 
-// 处理视频帧的回调函数
-func handleVideoFrame(frame []byte) {
-	// 在这里处理每一帧视频数据
-	//fmt.Println("Received a video frame")
-}
+//// 处理视频帧的回调函数
+//func handleVideoFrame(frame []byte) {
+//	// 在这里处理每一帧视频数据
+//	//fmt.Println("Received a video frame")
+//}
 
 
 // 打印 FFmpeg 的错误输出

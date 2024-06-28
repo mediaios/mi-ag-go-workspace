@@ -49,7 +49,7 @@ func main() {
 	sender.Start()
 
 	audioFrame := agoraservice.PcmAudioFrame{
-		Data:              make([]byte, 1920),
+		Data:              make([]byte, 960),
 		Timestamp:         0,
 		SamplesPerChannel: 480,
 		BytesPerSample:    2,
@@ -120,7 +120,7 @@ func main() {
 			}
 
 			sender.SendPcmData(&audioFrame)
-			time.Sleep(5 * time.Millisecond) // 控制发送频率，每隔10毫秒发送一次
+			time.Sleep(20 * time.Millisecond) // 控制发送频率，每隔10毫秒发送一次
 		}
 	}()
 

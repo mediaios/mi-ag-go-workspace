@@ -108,10 +108,11 @@ func main() {
 		}()
 
 		audioReader := bufio.NewReaderSize(audioOut, 16384) // 增加缓冲区大小
-		ticker := time.NewTicker(10 * time.Millisecond)
-		defer ticker.Stop()
-		for range ticker.C {
-			dataLen, err := io.ReadFull(audioReader, audioFrame.Data)
+		buffer := make([]byte, 0, 19200) // 使用一个更大的缓冲区来存储多帧数据
+
+		for {
+			data := make([]byte, 1920)
+			dataLen, err := io.ReadFull(audioReader, data)
 			if err != nil {
 				if err == io.EOF {
 					fmt.Println("Audio data read complete")
@@ -121,16 +122,27 @@ func main() {
 				break
 			}
 
-			fmt.Printf("dataLen: %d\n", dataLen)
-			if dataLen < len(audioFrame.Data) {
+			if dataLen < len(data) {
 				fmt.Println("Incomplete audio frame, filling with silence")
-				for i := dataLen; i < len(audioFrame.Data); i++ {
-					audioFrame.Data[i] = 0
+				for i := dataLen; i < len(data); i++ {
+					data[i] = 0
 				}
 			}
 
-			sender.SendPcmData(&audioFrame)
+			buffer = append(buffer, data...)
+			if len(buffer) >= 19200 { // 当缓冲区有10帧数据时，发送出去
+				for i := 0; i < 10; i++ {
+					copy(audioFrame.Data, buffer[i*1920:(i+1)*1920])
+					err := sender.SendPcmData(&audioFrame)
+					if err != nil {
+						fmt.Printf("Error sending audio data: %v\n", err)
+						return
+					}
+				}
+				buffer = buffer[19200:] // 清理已发送的数据
+			}
 
+			time.Sleep(10 * time.Millisecond) // 控制发送频率，每隔10毫秒发送一次
 		}
 	}()
 

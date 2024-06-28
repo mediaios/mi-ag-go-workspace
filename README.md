@@ -1,6 +1,18 @@
 # mi-ag-go-workspace
 poc for go sdk 
 
+## 如何运行
+
+```
+export LD_LIBRARY_PATH=/home/golang/src/mi-ag-go-workspace/agora_sdk
+
+cd go_wrapper
+go build MiAgTest.go
+./MiAgTest
+```
+
+
+
 
 ##FAQ
 

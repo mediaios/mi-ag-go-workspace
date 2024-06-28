@@ -126,7 +126,7 @@ func main() {
 			agoraservice.Destroy()
 		}()
 
-		audioReader := bufio.NewReaderSize(audioOut, 4096) // 增加缓冲区大小
+		audioReader := bufio.NewReaderSize(audioOut, 8192) // 增加缓冲区大小
 		for {
 			dataLen, err := io.ReadFull(audioReader, audioFrame.Data)
 			if err != nil {

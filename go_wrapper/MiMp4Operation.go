@@ -48,12 +48,17 @@ func main() {
 
 	// 处理视频数据
 	go func() {
-		buf := make([]byte, 640*360*3/2) // 假设YUV420P格式和360p分辨率
+		frameSize := 640 * 360 * 3 / 2 // 假设 YUV420P 格式和 1080p 分辨率
 		videoReader := bufio.NewReader(videoOut)
 		for {
-			_, err := videoReader.Read(buf)
+			buf := make([]byte, frameSize)
+			_, err := io.ReadFull(videoReader, buf)
 			if err != nil {
-				fmt.Printf("Error reading video data: %v\n", err)
+				if err == io.EOF {
+					fmt.Println("Video data read complete")
+				} else {
+					fmt.Printf("Error reading video data: %v\n", err)
+				}
 				break
 			}
 			// 处理一帧视频数据
@@ -68,7 +73,11 @@ func main() {
 		for {
 			n, err := audioReader.Read(buf)
 			if err != nil {
-				fmt.Printf("Error reading audio data: %v\n", err)
+				if err == io.EOF {
+					fmt.Println("Audio data read complete")
+				} else {
+					fmt.Printf("Error reading audio data: %v\n", err)
+				}
 				break
 			}
 			// 处理一段音频数据
@@ -76,7 +85,7 @@ func main() {
 		}
 	}()
 
-	// 读取并打印FFmpeg的错误输出
+	// 读取并打印 FFmpeg 的错误输出
 	go func() {
 		videoErrReader := bufio.NewReader(videoErr)
 		audioErrReader := bufio.NewReader(audioErr)
@@ -84,7 +93,7 @@ func main() {
 		printFFmpegErrorOutput(audioErrReader)
 	}()
 
-	// 等待FFmpeg进程完成
+	// 等待 FFmpeg 进程完成
 	if err := videoCmd.Wait(); err != nil {
 		fmt.Printf("Video FFmpeg process finished with error: %v\n", err)
 	}
@@ -105,7 +114,7 @@ func handleAudioFrame(frame []byte) {
 	fmt.Println("Received an audio frame")
 }
 
-// 打印FFmpeg的错误输出
+// 打印 FFmpeg 的错误输出
 func printFFmpegErrorOutput(reader *bufio.Reader) {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(reader)

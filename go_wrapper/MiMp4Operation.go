@@ -11,7 +11,7 @@ import (
 
 func main() {
 	svcCfg := agoraservice.AgoraServiceConfig{
-		APPID:"20338919f2ca4af4b1d7ec23d8870b56",
+		AppId:"20338919f2ca4af4b1d7ec23d8870b56",
 	}
 	agoraservice.Init(svcCfg)
 	conCfg := agoraservice.RtcConnectionConfig{
@@ -20,6 +20,7 @@ func main() {
 		ClientRole:		1,
 		ChannelProfile:	1,
 	}
+	conSignal := make(chan struct{})
 	connHandler := agoraservice.RtcConnectionEventHandler{
 		OnConnected: func(con *agoraservice.RtcConnection, info *agoraservice.RtcConnectionInfo, reason int) {
 			// do something

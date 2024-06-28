@@ -109,7 +109,8 @@ func main() {
 
 		audioReader := bufio.NewReaderSize(audioOut, 16384) // 增加缓冲区大小
 		for {
-			// 一次读取1920字节数据
+			startTime := time.Now()
+			
 			dataLen, err := io.ReadFull(audioReader, audioFrame.Data)
 			if err != nil {
 				if err == io.EOF {

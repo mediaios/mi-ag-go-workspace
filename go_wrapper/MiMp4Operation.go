@@ -135,7 +135,7 @@ func main() {
 			// 检查读取的数据长度是否符合预期
 			if dataLen < len(audioFrame.Data) {
 				fmt.Println("Incomplete audio frame")
-				break
+				//break
 			}
 
 			sender.SendPcmData(&audioFrame);

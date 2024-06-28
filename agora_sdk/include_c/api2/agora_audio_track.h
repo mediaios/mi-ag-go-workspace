@@ -173,6 +173,12 @@ AGORA_API_C_INT agora_local_audio_track_enable_local_playback(AGORA_HANDLE agora
  */
 AGORA_API_C_INT agora_local_audio_track_enable_ear_monitor(AGORA_HANDLE agora_local_audio_track, int enable, int include_audio_filter);
 
+AGORA_API_C_VOID agora_local_audio_track_set_max_buffer_audio_frame_number(AGORA_HANDLE agora_local_audio_track, int num);
+
+AGORA_API_C_INT agora_local_audio_track_clear_buffer(AGORA_HANDLE agora_local_audio_track);
+
+
+
 /**
  * @ANNOTATION:GROUP:agora_remote_audio_track
  */

@@ -13,10 +13,10 @@ func main() {
 	svcCfg := agoraservice.AgoraServiceConfig{
 		AppId:"20338919f2ca4af4b1d7ec23d8870b56",
 	}
-	agoraservice.Init(svcCfg)
+	agoraservice.Init(&svcCfg)
 	conCfg := agoraservice.RtcConnectionConfig{
 		SubAudio:		false,
-		subVideo:		false,
+		SubVideo:		false,
 		ClientRole:		1,
 		ChannelProfile:	1,
 	}
@@ -99,27 +99,27 @@ func main() {
 
 	// 处理视频数据
 	go func() {
-		frameSize := 640 * 360 * 3 / 2 // 假设 YUV420P 格式和 1080p 分辨率
-		videoReader := bufio.NewReader(videoOut)
-		for {
-			buf := make([]byte, frameSize)
-			_, err := io.ReadFull(videoReader, buf)
-			if err != nil {
-				if err == io.EOF {
-					fmt.Println("Video data read complete")
-				} else {
-					fmt.Printf("Error reading video data: %v\n", err)
-				}
-				break
-			}
-			// 处理一帧视频数据
-			handleVideoFrame(buf)
-		}
+		//frameSize := 640 * 360 * 3 / 2 // 假设 YUV420P 格式和 1080p 分辨率
+		//videoReader := bufio.NewReader(videoOut)
+		//for {
+		//	buf := make([]byte, frameSize)
+		//	_, err := io.ReadFull(videoReader, buf)
+		//	if err != nil {
+		//		if err == io.EOF {
+		//			fmt.Println("Video data read complete")
+		//		} else {
+		//			fmt.Printf("Error reading video data: %v\n", err)
+		//		}
+		//		break
+		//	}
+		//	// 处理一帧视频数据
+		//	handleVideoFrame(buf)
+		//}
 	}()
 
 	// 处理音频数据
 	go func() {
-		buf := make([]byte, 4096) // 根据需要调整缓冲区大小
+		//buf := make([]byte, 4096) // 根据需要调整缓冲区大小
 		audioReader := bufio.NewReader(audioOut)
 		for {
 			n, err := audioReader.Read(frame.Data)
@@ -173,7 +173,7 @@ func handleAudioFrame(frame []byte, sender *agoraservice.PcmSender, pcmFrame ago
 	// 更新帧数据
 	pcmFrame.Data = frame
 
-	// 发送到 Agora 服务
+	
 	if err := sender.SendPcmData(&pcmFrame); err != nil {
 		fmt.Printf("Error sending audio frame: %v\n", err)
 	}

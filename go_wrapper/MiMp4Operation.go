@@ -148,7 +148,7 @@ func main() {
 			}
 
 			sender.SendPcmData(&audioFrame)
-			time.Sleep(2 * time.Millisecond) // 控制发送频率，每隔10毫秒发送一次
+			time.Sleep(10 * time.Millisecond) // 控制发送频率，每隔10毫秒发送一次
 		}
 	}()
 

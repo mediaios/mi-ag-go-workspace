@@ -122,7 +122,7 @@ func main() {
 		//buf := make([]byte, 4096) // 根据需要调整缓冲区大小
 		audioReader := bufio.NewReader(audioOut)
 		for {
-			n, err := audioReader.Read(audioFrame.Data)
+			dataLen, err := audioReader.Read(audioFrame.Data)
 			if err != nil {
 				if err == io.EOF {
 					fmt.Println("Audio data read complete")
@@ -131,10 +131,13 @@ func main() {
 				}
 				break
 			}
+			if dataLen < 1920 {
+
+			}
 			// 处理一段音频数据
 
 			sender.SendPcmData(&audioFrame);
-			
+
 			//handleAudioFrame(frame.Data[:n], sender, frame)
 		}
 	}()

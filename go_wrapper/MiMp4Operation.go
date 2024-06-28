@@ -120,7 +120,7 @@ func main() {
 			}
 
 			// 增加时间戳防止帧的累积
-			audioFrame.Timestamp = uint64(time.Now().UnixNano() / int64(time.Millisecond))
+			audioFrame.Timestamp = int64(time.Now().UnixNano() / int64(time.Millisecond))
 			sender.SendPcmData(&audioFrame)
 			time.Sleep(20 * time.Millisecond) // 调整发送频率
 		}

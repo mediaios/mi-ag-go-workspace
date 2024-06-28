@@ -7,7 +7,7 @@ import (
 	"io"
 	"os/exec"
 	"agora.io/agoraservice"
-	
+
 )
 
 func main() {
@@ -56,7 +56,7 @@ func main() {
 		NumberOfChannels:  2,
 		SampleRate:        48000,
 	}
-	sender.SetSendBufferSize(1000)
+	sender.SetSendBufferSize(1920*2)
 
 
 

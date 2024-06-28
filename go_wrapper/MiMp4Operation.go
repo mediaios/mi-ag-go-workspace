@@ -125,7 +125,7 @@ func main() {
 			// 增加时间戳防止帧的累积
 			audioFrame.Timestamp = int64(time.Since(startTime) / time.Millisecond)
 			sender.SendPcmData(&audioFrame)
-			time.Sleep(frameDuration) // 调整发送频率
+			time.Sleep(frameDuration - time.Since(startTime)%frameDuration) // 精确控制发送频率
 		}
 	}()
 

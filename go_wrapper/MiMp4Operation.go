@@ -7,7 +7,7 @@ import (
 	"io"
 	"os/exec"
 	"agora.io/agoraservice"
-
+	"time"
 )
 
 func main() {
@@ -56,7 +56,7 @@ func main() {
 		NumberOfChannels:  2,
 		SampleRate:        48000,
 	}
-	sender.SetSendBufferSize(1920*2)
+	sender.SetSendBufferSize(1000)
 
 
 
@@ -141,7 +141,7 @@ func main() {
 			}
 
 			sender.SendPcmData(&audioFrame);
-			//time.Sleep(90 * time.Millisecond)
+			time.Sleep(10 * time.Millisecond)
 
 			//handleAudioFrame(frame.Data[:n], sender, frame)
 		}

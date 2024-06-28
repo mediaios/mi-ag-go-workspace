@@ -56,7 +56,7 @@ func main() {
 		NumberOfChannels:  2,
 		SampleRate:        48000,
 	}
-	sender.SetSendBufferSize(1000)
+	sender.SetSendBufferSize(2000)
 
 
 

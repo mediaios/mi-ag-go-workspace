@@ -119,8 +119,10 @@ func main() {
 				break
 			}
 
+			// 增加时间戳防止帧的累积
+			audioFrame.Timestamp = uint64(time.Now().UnixNano() / int64(time.Millisecond))
 			sender.SendPcmData(&audioFrame)
-			time.Sleep(10 * time.Millisecond) // 控制发送频率，每隔10毫秒发送一次
+			time.Sleep(20 * time.Millisecond) // 调整发送频率
 		}
 	}()
 

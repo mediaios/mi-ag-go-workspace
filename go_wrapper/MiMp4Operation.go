@@ -99,22 +99,22 @@ func main() {
 
 	// 处理视频数据
 	go func() {
-		//frameSize := 640 * 360 * 3 / 2 // 假设 YUV420P 格式和 1080p 分辨率
-		//videoReader := bufio.NewReader(videoOut)
-		//for {
-		//	buf := make([]byte, frameSize)
-		//	_, err := io.ReadFull(videoReader, buf)
-		//	if err != nil {
-		//		if err == io.EOF {
-		//			fmt.Println("Video data read complete")
-		//		} else {
-		//			fmt.Printf("Error reading video data: %v\n", err)
-		//		}
-		//		break
-		//	}
-		//	// 处理一帧视频数据
-		//	handleVideoFrame(buf)
-		//}
+		frameSize := 640 * 360 * 3 / 2 // 假设 YUV420P 格式和 1080p 分辨率
+		videoReader := bufio.NewReader(videoOut)
+		for {
+			buf := make([]byte, frameSize)
+			_, err := io.ReadFull(videoReader, buf)
+			if err != nil {
+				if err == io.EOF {
+					fmt.Println("Video data read complete")
+				} else {
+					fmt.Printf("Error reading video data: %v\n", err)
+				}
+				break
+			}
+			// 处理一帧视频数据
+			handleVideoFrame(buf)
+		}
 	}()
 
 	// 处理音频数据
@@ -173,10 +173,8 @@ func handleAudioFrame(frame []byte, sender *agoraservice.PcmSender, pcmFrame ago
 	// 更新帧数据
 	pcmFrame.Data = frame
 
-	
-	if err := sender.SendPcmData(&pcmFrame); err != nil {
-		fmt.Printf("Error sending audio frame: %v\n", err)
-	}
+
+	sender.SendPcmData(&pcmFrame);
 }
 
 // 打印 FFmpeg 的错误输出

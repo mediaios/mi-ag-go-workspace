@@ -109,8 +109,6 @@ func main() {
 
 		audioReader := bufio.NewReaderSize(audioOut, 8192) // 增大缓冲区大小
 		for {
-			startTime := time.Now()
-
 			dataLen, err := io.ReadFull(audioReader, audioFrame.Data)
 			if err != nil {
 				if err == io.EOF {
@@ -130,12 +128,7 @@ func main() {
 
 			sender.SendPcmData(&audioFrame)
 
-
-			elapsedTime := time.Since(startTime)
-			sleepTime := 30*time.Millisecond - elapsedTime
-			if sleepTime > 0 {
-				time.Sleep(sleepTime)
-			}
+			time.Sleep(20 * time.Millisecond) // 控制发送频率，每隔20毫秒发送一次
 		}
 	}()
 

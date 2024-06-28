@@ -120,10 +120,15 @@ func main() {
 
 	// 处理音频数据
 	go func() {
-		//buf := make([]byte, 4096) // 根据需要调整缓冲区大小
-		audioReader := bufio.NewReader(audioOut)
+		defer func() {
+			sender.Stop()
+			con.Disconnect()
+			agoraservice.Destroy()
+		}()
+
+		audioReader := bufio.NewReaderSize(audioOut, 4096) // 增加缓冲区大小
 		for {
-			dataLen, err := audioReader.Read(audioFrame.Data)
+			dataLen, err := io.ReadFull(audioReader, audioFrame.Data)
 			if err != nil {
 				if err == io.EOF {
 					fmt.Println("Audio data read complete")
@@ -132,20 +137,18 @@ func main() {
 				}
 				break
 			}
-		
+
 			// 检查读取的数据长度是否符合预期
-			fmt.Println("dataLen: %d",dataLen)
+			fmt.Printf("dataLen: %d\n", dataLen)
 			if dataLen < len(audioFrame.Data) {
 				fmt.Println("Incomplete audio frame, filling with silence")
 				for i := dataLen; i < len(audioFrame.Data); i++ {
 					audioFrame.Data[i] = 0 // 填充静音
 				}
 			}
-		
-			sender.SendPcmData(&audioFrame);
-			time.Sleep(10 * time.Millisecond)
-		
-			//handleAudioFrame(frame.Data[:n], sender, frame)
+
+			sender.SendPcmData(&audioFrame)
+			time.Sleep(10 * time.Millisecond) // 控制发送频率，每隔10毫秒发送一次
 		}
 	}()
 

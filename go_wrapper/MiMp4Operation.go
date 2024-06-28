@@ -131,10 +131,12 @@ func main() {
 				}
 				break
 			}
-			if dataLen < 1920 {
 
+			// 检查读取的数据长度是否符合预期
+			if dataLen < len(audioFrame.Data) {
+				fmt.Println("Incomplete audio frame")
+				break
 			}
-			// 处理一段音频数据
 
 			sender.SendPcmData(&audioFrame);
 
@@ -167,7 +169,7 @@ func main() {
 // 处理视频帧的回调函数
 func handleVideoFrame(frame []byte) {
 	// 在这里处理每一帧视频数据
-	fmt.Println("Received a video frame")
+	//fmt.Println("Received a video frame")
 }
 
 

@@ -130,8 +130,11 @@ func main() {
 
 			sender.SendPcmData(&audioFrame)
 
-			// 控制发送频率，每隔20毫秒发送一次
-			time.Sleep(20 * time.Millisecond)
+			elapsedTime := time.Since(startTime)
+			sleepTime := 20*time.Millisecond - elapsedTime
+			if sleepTime > 0 {
+				time.Sleep(sleepTime)
+			}
 		}
 	}()
 

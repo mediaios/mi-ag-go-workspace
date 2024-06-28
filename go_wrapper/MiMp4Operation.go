@@ -109,7 +109,7 @@ func main() {
 
 		audioReader := bufio.NewReaderSize(audioOut, 8192)
 		startTime := time.Now()
-		frameDuration := time.Millisecond * 20 // 每帧的持续时间
+		frameDuration := time.Millisecond * 10 // 每帧的持续时间
 		for {
 			_, err := io.ReadFull(audioReader, audioFrame.Data)
 			if err != nil {

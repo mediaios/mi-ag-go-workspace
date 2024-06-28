@@ -56,7 +56,7 @@ func main() {
 		NumberOfChannels:  2,
 		SampleRate:        48000,
 	}
-	sender.SetSendBufferSize(2000)
+	sender.SetSendBufferSize(1000)
 
 
 
@@ -136,8 +136,10 @@ func main() {
 			// 检查读取的数据长度是否符合预期
 			fmt.Println("dataLen: %d",dataLen)
 			if dataLen < len(audioFrame.Data) {
-				//fmt.Println("Incomplete audio frame")
-				//break
+				fmt.Println("Incomplete audio frame, filling with silence")
+				for i := dataLen; i < len(audioFrame.Data); i++ {
+					audioFrame.Data[i] = 0 // 填充静音
+				}
 			}
 
 			sender.SendPcmData(&audioFrame);

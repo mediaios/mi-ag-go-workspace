@@ -59,11 +59,11 @@ func main() {
 	sender.SetSendBufferSize(1000)
 
 	// video sender
-	videoSender = con.GetVideoSender()
+	videoSender := con.GetVideoSender()
 	w := 640
 	h := 360
-	dataSize = w * h * 3 / 2
-	data := make([]byte,dataSize)
+	video_dataSize := w * h * 3 / 2
+	video_data := make([]byte,dataSize)
 	videoSender.SetVideoEncoderConfig(&VideoEncoderConfig{
 		CodecType:         2,
 		Width:             640,
@@ -152,7 +152,7 @@ func main() {
 		lastFrameTime := time.Now()
 
 		for {
-			_, err := io.ReadFull(videoReader, videoFrame.Data)
+			_, err := io.ReadFull(videoReader, video_data)
 			if err != nil {
 				if err == io.EOF {
 					fmt.Println("Video data read complete")
@@ -166,7 +166,7 @@ func main() {
 			lastFrameTime = time.Now()
 
 			videoSender.SendVideoFrame(&VideoFrame{
-				Buffer:    videoFrame.Data,
+				Buffer:    video_dataSize,
 				Width:     w,
 				Height:    h,
 				YStride:   w,

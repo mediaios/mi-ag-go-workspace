@@ -63,8 +63,8 @@ func main() {
 	w := 640
 	h := 360
 	video_dataSize := w * h * 3 / 2
-	video_data := make([]byte,dataSize)
-	videoSender.SetVideoEncoderConfig(&VideoEncoderConfig{
+	video_data := make([]byte,video_dataSize)
+	videoSender.SetVideoEncoderConfig(&agoraservice.VideoEncoderConfig{
 		CodecType:         2,
 		Width:             640,
 		Height:            360,
@@ -165,8 +165,8 @@ func main() {
 			time.Sleep(frameInterval - time.Since(lastFrameTime))
 			lastFrameTime = time.Now()
 
-			videoSender.SendVideoFrame(&VideoFrame{
-				Buffer:    video_dataSize,
+			videoSender.SendVideoFrame(&agoraservice.VideoFrame{
+				Buffer:    video_data,
 				Width:     w,
 				Height:    h,
 				YStride:   w,

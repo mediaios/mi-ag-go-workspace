@@ -58,22 +58,39 @@ func main() {
 	}
 	sender.SetSendBufferSize(1000)
 
+	// video sender
+	videoSender = con.GetVideoSender()
+	w := 640
+	h := 360
+	dataSize = w * h * 3 / 2
+	data := make([]byte,dataSize)
+	videoSender.SetVideoEncoderConfig(&VideoEncoderConfig{
+		CodecType:         2,
+		Width:             640,
+		Height:            360,
+		Framerate:         30,
+		Bitrate:           1212,
+		MinBitrate:        800,
+		OrientationMode:   0,
+		DegradePreference: 0,
+	})
+	videoSender.Start()
 
 
 	inputFile := "./test_data/sony_640.mp4"
 
-	//// 启动FFmpeg进程以分离视频数据
-	//videoCmd := exec.Command("ffmpeg", "-i", inputFile, "-f", "rawvideo", "-pix_fmt", "yuv420p", "-")
-	//videoOut, err := videoCmd.StdoutPipe()
-	//if err != nil {
-	//	fmt.Printf("Error creating video output pipe: %v\n", err)
-	//	return
-	//}
-	//videoErr, err := videoCmd.StderrPipe()
-	//if err != nil {
-	//	fmt.Printf("Error creating video error pipe: %v\n", err)
-	//	return
-	//}
+	// 启动FFmpeg进程以分离视频数据
+	videoCmd := exec.Command("ffmpeg", "-i", inputFile, "-f", "rawvideo", "-pix_fmt", "yuv420p", "-")
+	videoOut, err := videoCmd.StdoutPipe()
+	if err != nil {
+		fmt.Printf("Error creating video output pipe: %v\n", err)
+		return
+	}
+	videoErr, err := videoCmd.StderrPipe()
+	if err != nil {
+		fmt.Printf("Error creating video error pipe: %v\n", err)
+		return
+	}
 
 	// 启动FFmpeg进程以分离音频数据
 	audioCmd := exec.Command("ffmpeg", "-i", inputFile, "-f", "s16le", "-acodec", "pcm_s16le", "-")
@@ -88,11 +105,11 @@ func main() {
 		return
 	}
 
-	//// 启动FFmpeg进程
-	//if err := videoCmd.Start(); err != nil {
-	//	fmt.Printf("Error starting video FFmpeg process: %v\n", err)
-	//	return
-	//}
+	// 启动FFmpeg进程
+	if err := videoCmd.Start(); err != nil {
+		fmt.Printf("Error starting video FFmpeg process: %v\n", err)
+		return
+	}
 	if err := audioCmd.Start(); err != nil {
 		fmt.Printf("Error starting audio FFmpeg process: %v\n", err)
 		return
@@ -129,22 +146,60 @@ func main() {
 		}
 	}()
 
+	go func() {
+		videoReader := bufio.NewReaderSize(videoOut, 345600) // 适应视频帧大小的缓冲区
+		frameInterval := time.Second / 30 // 假设视频帧率为30fps
+		lastFrameTime := time.Now()
+
+		for {
+			_, err := io.ReadFull(videoReader, videoFrame.Data)
+			if err != nil {
+				if err == io.EOF {
+					fmt.Println("Video data read complete")
+				} else {
+					fmt.Printf("Error reading video data: %v\n", err)
+				}
+				break
+			}
+
+			time.Sleep(frameInterval - time.Since(lastFrameTime))
+			lastFrameTime = time.Now()
+
+			videoSender.SendVideoFrame(&VideoFrame{
+				Buffer:    videoFrame.Data,
+				Width:     w,
+				Height:    h,
+				YStride:   w,
+				UStride:   w / 2,
+				VStride:   w / 2,
+				Timestamp: 0,
+			})
+			time.Sleep(33 * time.Millisecond)
+
+		}
+
+	}()
+
 	// 读取并打印 FFmpeg 的错误输出
 	go func() {
-		//videoErrReader := bufio.NewReader(videoErr)
 		audioErrReader := bufio.NewReader(audioErr)
-		//printFFmpegErrorOutput(videoErrReader)
 		printFFmpegErrorOutput(audioErrReader)
 	}()
 
-	//// 等待 FFmpeg 进程完成
-	//if err := videoCmd.Wait(); err != nil {
-	//	fmt.Printf("Video FFmpeg process finished with error: %v\n", err)
-	//}
+	go func() {
+		videoErrReader := bufio.NewReader(videoErr)
+		printFFmpegErrorOutput(videoErrReader)
+	}()
+
+	// 等待 FFmpeg 进程完成
+	if err := videoCmd.Wait(); err != nil {
+		fmt.Printf("Video FFmpeg process finished with error: %v\n", err)
+	}
 	if err := audioCmd.Wait(); err != nil {
 		fmt.Printf("Audio FFmpeg process finished with error: %v\n", err)
 
 		sender.Stop()
+		videoSender.Stop()
 		con.Disconnect()
 
 		agoraservice.Destroy()

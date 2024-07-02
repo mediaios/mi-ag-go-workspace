@@ -24,12 +24,10 @@ func main() {
 	conSignal := make(chan struct{})
 	connHandler := agoraservice.RtcConnectionEventHandler{
 		OnConnected: func(con *agoraservice.RtcConnection, info *agoraservice.RtcConnectionInfo, reason int) {
-			// do something
 			fmt.Println("Connected")
 			conSignal <- struct{}{}
 		},
 		OnDisconnected: func(con *agoraservice.RtcConnection, info *agoraservice.RtcConnectionInfo, reason int) {
-			// do something
 			fmt.Println("Disconnected")
 		},
 		OnUserJoined: func(con *agoraservice.RtcConnection, uid string) {
@@ -48,14 +46,6 @@ func main() {
 	<-conSignal
 	sender.Start()
 
-	//audioFrame := agoraservice.PcmAudioFrame{
-	//	Data:              make([]byte, 1920),
-	//	Timestamp:         0,
-	//	SamplesPerChannel: 480,
-	//	BytesPerSample:    2,
-	//	NumberOfChannels:  2,
-	//	SampleRate:        48000,
-	//}
 	audioFrame := agoraservice.PcmAudioFrame{
 		Data:              make([]byte, 1764),
 		Timestamp:         0,
@@ -66,7 +56,6 @@ func main() {
 	}
 	sender.SetSendBufferSize(1000)
 
-	// video sender
 	videoSender := con.GetVideoSender()
 	w := 1280
 	h := 720
@@ -84,10 +73,8 @@ func main() {
 	})
 	videoSender.Start()
 
-	//inputFile := "./test_data/sony_640.mp4"
 	inputFile := "./test_data/henyuandedifang.mp4"
 
-	// 启动FFmpeg进程以分离视频数据
 	videoCmd := exec.Command("ffmpeg", "-i", inputFile, "-f", "rawvideo", "-pix_fmt", "yuv420p", "-")
 	videoOut, err := videoCmd.StdoutPipe()
 	if err != nil {
@@ -100,7 +87,6 @@ func main() {
 		return
 	}
 
-	// 启动FFmpeg进程以分离音频数据
 	audioCmd := exec.Command("ffmpeg", "-i", inputFile, "-f", "s16le", "-acodec", "pcm_s16le", "-")
 	audioOut, err := audioCmd.StdoutPipe()
 	if err != nil {
@@ -113,7 +99,6 @@ func main() {
 		return
 	}
 
-	// 启动FFmpeg进程
 	if err := videoCmd.Start(); err != nil {
 		fmt.Printf("Error starting video FFmpeg process: %v\n", err)
 		return
@@ -123,7 +108,8 @@ func main() {
 		return
 	}
 
-	// 处理音频数据
+	startTime := time.Now()
+
 	go func() {
 		defer func() {
 			sender.Stop()
@@ -132,8 +118,8 @@ func main() {
 		}()
 
 		audioReader := bufio.NewReaderSize(audioOut, 8192)
-		startTime := time.Now()
 		frameDuration := time.Duration(audioFrame.SamplesPerChannel) * time.Second / time.Duration(audioFrame.SampleRate)
+		nextFrameTime := startTime
 
 		for {
 			_, err := io.ReadFull(audioReader, audioFrame.Data)
@@ -146,17 +132,20 @@ func main() {
 				break
 			}
 
-			// 增加时间戳防止帧的累积
-			audioFrame.Timestamp = int64(time.Since(startTime) / time.Millisecond)
+			// 计算音频帧的时间戳
+			audioFrame.Timestamp = int64(time.Since(startTime).Milliseconds())
 			sender.SendPcmData(&audioFrame)
-			time.Sleep(frameDuration - time.Since(startTime)%frameDuration) // 精确控制发送频率
+
+			// 确保帧的发送频率
+			time.Sleep(time.Until(nextFrameTime))
+			nextFrameTime = nextFrameTime.Add(frameDuration)
 		}
 	}()
 
 	go func() {
-		videoReader := bufio.NewReaderSize(videoOut, video_dataSize) // 适应视频帧大小的缓冲区
-		frameInterval := time.Second / 24                            // 假设视频帧率为30fps
-		lastFrameTime := time.Now()
+		videoReader := bufio.NewReaderSize(videoOut, video_dataSize)
+		frameInterval := time.Second / 24
+		nextFrameTime := startTime
 
 		for {
 			_, err := io.ReadFull(videoReader, video_data)
@@ -169,25 +158,24 @@ func main() {
 				break
 			}
 
-			time.Sleep(frameInterval - time.Since(lastFrameTime))
-			lastFrameTime = time.Now()
-
-			videoSender.SendVideoFrame(&agoraservice.VideoFrame{
+			videoFrame := agoraservice.VideoFrame{
 				Buffer:    video_data,
 				Width:     w,
 				Height:    h,
 				YStride:   w,
 				UStride:   w / 2,
 				VStride:   w / 2,
-				Timestamp: 0,
-			})
-			time.Sleep(33 * time.Millisecond)
+				Timestamp: int64(time.Since(startTime).Milliseconds()),
+			}
 
+			videoSender.SendVideoFrame(&videoFrame)
+
+			// 确保帧的发送频率
+			time.Sleep(time.Until(nextFrameTime))
+			nextFrameTime = nextFrameTime.Add(frameInterval)
 		}
-
 	}()
 
-	// 读取并打印 FFmpeg 的错误输出
 	go func() {
 		audioErrReader := bufio.NewReader(audioErr)
 		printFFmpegErrorOutput(audioErrReader)
@@ -198,7 +186,6 @@ func main() {
 		printFFmpegErrorOutput(videoErrReader)
 	}()
 
-	// 等待 FFmpeg 进程完成
 	if err := videoCmd.Wait(); err != nil {
 		fmt.Printf("Video FFmpeg process finished with error: %v\n", err)
 	}
@@ -213,13 +200,6 @@ func main() {
 	}
 }
 
-//// 处理视频帧的回调函数
-//func handleVideoFrame(frame []byte) {
-//	// 在这里处理每一帧视频数据
-//	//fmt.Println("Received a video frame")
-//}
-
-// 打印 FFmpeg 的错误输出
 func printFFmpegErrorOutput(reader *bufio.Reader) {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(reader)

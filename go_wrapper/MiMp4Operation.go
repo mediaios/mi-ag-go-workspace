@@ -4,13 +4,92 @@ import (
 	"agora.io/agoraservice"
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"os/exec"
+	"strconv"
+	"strings"
 	"time"
 )
 
+type Stream struct {
+	Width        int    `json:"width"`
+	Height       int    `json:"height"`
+	CodecType    string `json:"codec_type"`
+	AvgFrameRate string `json:"avg_frame_rate"`
+	SampleRate   string `json:"sample_rate"`
+	Channels     int    `json:"channels"`
+}
+
+type FFProbeOutput struct {
+	Streams []Stream `json:"streams"`
+}
+
+// 获取MP4文件的媒体信息
+func getMediaInfo(inputFile string) (int, int, float64, int, int, error) {
+	cmd := exec.Command("ffprobe", "-v", "error", "-show_streams", "-of", "json", inputFile)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		return 0, 0, 0, 0, 0, err
+	}
+
+	var ffprobeOutput FFProbeOutput
+	if err := json.Unmarshal(out.Bytes(), &ffprobeOutput); err != nil {
+		return 0, 0, 0, 0, 0, err
+	}
+
+	var width, height, sampleRate, channels int
+	var framerate float64
+
+	for _, stream := range ffprobeOutput.Streams {
+		if stream.CodecType == "video" {
+			width = stream.Width
+			height = stream.Height
+
+			framerateParts := strings.Split(stream.AvgFrameRate, "/")
+			if len(framerateParts) == 2 {
+				numerator, _ := strconv.Atoi(framerateParts[0])
+				denominator, _ := strconv.Atoi(framerateParts[1])
+				if denominator != 0 {
+					framerate = float64(numerator) / float64(denominator)
+				}
+			}
+		} else if stream.CodecType == "audio" {
+			sampleRate, _ = strconv.Atoi(stream.SampleRate)
+			channels = stream.Channels
+		}
+	}
+	return width, height, framerate, sampleRate, channels, nil
+}
+
+// Agora: 计算码率
+func RecommendBit(iwidth, iheight, ifps, ichannelType int) float64 {
+	term1 := 400 * math.Pow(float64(iwidth*iheight)/(640*360), 0.75)
+	term2 := math.Pow(float64(ifps)/15, 0.6)
+	term3 := math.Pow(2, float64(ichannelType))
+	recommendBit := term1 * term2 * term3
+	return recommendBit
+}
+
 func main() {
+
+	inputFile := "./test_data/henyuandedifang.mp4"
+
+	width, height, framerate, sampleRate, channels, err := getMediaInfo(inputFile)
+	if err != nil {
+		fmt.Printf("Error getting media info: %v\n", err)
+		return
+	}
+
+	fmt.Printf("Width: %d\n", width)
+	fmt.Printf("Height: %d\n", height)
+	fmt.Printf("Framerate: %.2f\n", framerate)
+	fmt.Printf("SampleRate: %d\n", sampleRate)
+	fmt.Printf("Channels: %d\n", channels)
+
 	svcCfg := agoraservice.AgoraServiceConfig{
 		AppId: "20338919f2ca4af4b1d7ec23d8870b56",
 	}
@@ -46,34 +125,47 @@ func main() {
 	<-conSignal
 	sender.Start()
 
+	/*
+			samples计算方式：
+				*采样率是 44100，因此采集10ms的数据采样个数是 44100/1000*10 = 441 个
+		    bufferSize计算方式：
+				* sample*bitPerSample/8*channels = 441*16/8*2 = 1764
+	*/
+	samples := int(float64(sampleRate) / 1000 * 10)
+	bufferSize := samples * 16 * channels / 8
+
 	audioFrame := agoraservice.PcmAudioFrame{
-		Data:              make([]byte, 1764),
+		Data:              make([]byte, bufferSize),
 		Timestamp:         0,
-		SamplesPerChannel: 441,
-		BytesPerSample:    2,
-		NumberOfChannels:  2,
-		SampleRate:        44100,
+		SamplesPerChannel: samples,
+		BytesPerSample:    16 / 8,
+		NumberOfChannels:  channels,
+		SampleRate:        sampleRate,
 	}
 	sender.SetSendBufferSize(1000)
 
 	videoSender := con.GetVideoSender()
-	w := 1280
-	h := 720
+	w := width
+	h := height
 	video_dataSize := w * h * 3 / 2
 	video_data := make([]byte, video_dataSize)
+	videoBitrate := int(RecommendBit(width, height, int(framerate), 1))
+	fmt.Printf("videoBitrate: %d\n", videoBitrate)
+	fmt.Printf("bufferSize: %d\n", bufferSize)
+	fmt.Printf("samples: %d\n", samples)
+	fmt.Printf("channels: %d\n", channels)
+	fmt.Printf("sampleRate: %d\n", sampleRate)
 	videoSender.SetVideoEncoderConfig(&agoraservice.VideoEncoderConfig{
 		CodecType:         2,
 		Width:             w,
 		Height:            h,
-		Framerate:         24,
-		Bitrate:           3000,
-		MinBitrate:        2800,
+		Framerate:         int(framerate),
+		Bitrate:           videoBitrate * 1000,
+		MinBitrate:        videoBitrate * 1000,
 		OrientationMode:   0,
 		DegradePreference: 0,
 	})
 	videoSender.Start()
-
-	inputFile := "./test_data/henyuandedifang.mp4"
 
 	videoCmd := exec.Command("ffmpeg", "-i", inputFile, "-f", "rawvideo", "-pix_fmt", "yuv420p", "-")
 	videoOut, err := videoCmd.StdoutPipe()
@@ -144,7 +236,7 @@ func main() {
 
 	go func() {
 		videoReader := bufio.NewReaderSize(videoOut, video_dataSize)
-		frameInterval := time.Second / 24
+		frameInterval := time.Second / time.Duration(math.Round(framerate))
 		nextFrameTime := startTime
 
 		for {

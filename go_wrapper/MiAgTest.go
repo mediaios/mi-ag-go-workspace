@@ -13,7 +13,7 @@ func main() {
 	}
 	agoraservice.Init(&svcCfg)
 	conCfg := agoraservice.RtcConnectionConfig{
-		SubAudio:       true,
+		SubAudio:       false,
 		SubVideo:       false,
 		ClientRole:     1,
 		ChannelProfile: 1,
@@ -52,7 +52,9 @@ func main() {
 	defer con.Release()
 	sender := con.NewPcmSender()
 	defer sender.Release()
+	con.SubscribeAudio("999")
 	con.Connect("", "qitest", "0")
+
 	<-conSignal
 	sender.Start()
 

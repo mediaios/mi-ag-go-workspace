@@ -1,25 +1,25 @@
 package main
 
 import (
+	"agora.io/agoraservice"
 	"bufio"
 	"bytes"
 	"fmt"
 	"io"
 	"os/exec"
-	"agora.io/agoraservice"
 	"time"
 )
 
 func main() {
 	svcCfg := agoraservice.AgoraServiceConfig{
-		AppId:"20338919f2ca4af4b1d7ec23d8870b56",
+		AppId: "20338919f2ca4af4b1d7ec23d8870b56",
 	}
 	agoraservice.Init(&svcCfg)
 	conCfg := agoraservice.RtcConnectionConfig{
-		SubAudio:		false,
-		SubVideo:		false,
-		ClientRole:		1,
-		ChannelProfile:	1,
+		SubAudio:       false,
+		SubVideo:       false,
+		ClientRole:     1,
+		ChannelProfile: 1,
 	}
 	conSignal := make(chan struct{})
 	connHandler := agoraservice.RtcConnectionEventHandler{
@@ -48,36 +48,44 @@ func main() {
 	<-conSignal
 	sender.Start()
 
+	//audioFrame := agoraservice.PcmAudioFrame{
+	//	Data:              make([]byte, 1920),
+	//	Timestamp:         0,
+	//	SamplesPerChannel: 480,
+	//	BytesPerSample:    2,
+	//	NumberOfChannels:  2,
+	//	SampleRate:        48000,
+	//}
 	audioFrame := agoraservice.PcmAudioFrame{
-		Data:              make([]byte, 1920),
+		Data:              make([]byte, 1764),
 		Timestamp:         0,
-		SamplesPerChannel: 480,
+		SamplesPerChannel: 441,
 		BytesPerSample:    2,
 		NumberOfChannels:  2,
-		SampleRate:        48000,
+		SampleRate:        44100,
 	}
 	sender.SetSendBufferSize(1000)
 
 	// video sender
 	videoSender := con.GetVideoSender()
-	w := 640
-	h := 360
+	w := 1280
+	h := 720
 	video_dataSize := w * h * 3 / 2
-	video_data := make([]byte,video_dataSize)
+	video_data := make([]byte, video_dataSize)
 	videoSender.SetVideoEncoderConfig(&agoraservice.VideoEncoderConfig{
 		CodecType:         2,
-		Width:             640,
-		Height:            360,
-		Framerate:         30,
-		Bitrate:           1212,
-		MinBitrate:        800,
+		Width:             w,
+		Height:            h,
+		Framerate:         24,
+		Bitrate:           3000,
+		MinBitrate:        2800,
 		OrientationMode:   0,
 		DegradePreference: 0,
 	})
 	videoSender.Start()
 
-
-	inputFile := "./test_data/sony_640.mp4"
+	//inputFile := "./test_data/sony_640.mp4"
+	inputFile := "./test_data/henyuandedifang.mp4"
 
 	// 启动FFmpeg进程以分离视频数据
 	videoCmd := exec.Command("ffmpeg", "-i", inputFile, "-f", "rawvideo", "-pix_fmt", "yuv420p", "-")
@@ -115,7 +123,6 @@ func main() {
 		return
 	}
 
-
 	// 处理音频数据
 	go func() {
 		defer func() {
@@ -147,8 +154,8 @@ func main() {
 	}()
 
 	go func() {
-		videoReader := bufio.NewReaderSize(videoOut, 345600) // 适应视频帧大小的缓冲区
-		frameInterval := time.Second / 30 // 假设视频帧率为30fps
+		videoReader := bufio.NewReaderSize(videoOut, video_dataSize) // 适应视频帧大小的缓冲区
+		frameInterval := time.Second / 24                            // 假设视频帧率为30fps
 		lastFrameTime := time.Now()
 
 		for {
@@ -211,7 +218,6 @@ func main() {
 //	// 在这里处理每一帧视频数据
 //	//fmt.Println("Received a video frame")
 //}
-
 
 // 打印 FFmpeg 的错误输出
 func printFFmpegErrorOutput(reader *bufio.Reader) {

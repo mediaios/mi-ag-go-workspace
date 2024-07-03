@@ -84,11 +84,7 @@ func main() {
 		return
 	}
 
-	fmt.Printf("Width: %d\n", width)
-	fmt.Printf("Height: %d\n", height)
-	fmt.Printf("Framerate: %.2f\n", framerate)
-	fmt.Printf("SampleRate: %d\n", sampleRate)
-	fmt.Printf("Channels: %d\n", channels)
+	fmt.Printf("Width: %d, Height: %d, Framerate: %.2f, SampleRate: %d, Channels: %d\n", width, height, framerate, sampleRate, channels)
 
 	svcCfg := agoraservice.AgoraServiceConfig{
 		AppId: "20338919f2ca4af4b1d7ec23d8870b56",
@@ -150,18 +146,13 @@ func main() {
 	video_dataSize := w * h * 3 / 2
 	video_data := make([]byte, video_dataSize)
 	videoBitrate := int(RecommendBit(width, height, int(framerate), 1))
-	fmt.Printf("videoBitrate: %d\n", videoBitrate)
-	fmt.Printf("bufferSize: %d\n", bufferSize)
-	fmt.Printf("samples: %d\n", samples)
-	fmt.Printf("channels: %d\n", channels)
-	fmt.Printf("sampleRate: %d\n", sampleRate)
 	videoSender.SetVideoEncoderConfig(&agoraservice.VideoEncoderConfig{
 		CodecType:         2,
 		Width:             w,
 		Height:            h,
 		Framerate:         int(framerate),
-		Bitrate:           videoBitrate * 1000,
-		MinBitrate:        videoBitrate * 1000,
+		Bitrate:           videoBitrate,
+		MinBitrate:        videoBitrate,
 		OrientationMode:   0,
 		DegradePreference: 0,
 	})

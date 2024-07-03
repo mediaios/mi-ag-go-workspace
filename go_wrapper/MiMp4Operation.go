@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"math"
@@ -76,8 +77,16 @@ func RecommendBit(iwidth, iheight, ifps, ichannelType int) float64 {
 
 func main() {
 
-	inputFile := "./test_data/henyuandedifang.mp4"
+	mp4Path := flag.String("mp4", "./test_data/henyuandedifang.mp4", "Path to the MP4 file")
+	channel := flag.String("channel", "qitest", "Channel name")
+	uid := flag.String("uid", "0", "uid")
+	flag.Parse()
+
+	fmt.Printf("MP4 Path: %s, channel: %s, uid: %s \n", *mp4Path, *channel, *uid)
+
+	//inputFile := "./test_data/henyuandedifang.mp4"
 	//inputFile := "./test_data/4kvideo.mp4"
+	inputFile := *mp4Path
 	width, height, framerate, sampleRate, channels, err := getMediaInfo(inputFile)
 	if err != nil {
 		fmt.Printf("Error getting media info: %v\n", err)
@@ -117,7 +126,7 @@ func main() {
 	defer con.Release()
 	sender := con.NewPcmSender()
 	defer sender.Release()
-	con.Connect("", "qitest", "0")
+	con.Connect("", *channel, *uid)
 	<-conSignal
 	sender.Start()
 
@@ -203,7 +212,7 @@ func main() {
 		audioReader := bufio.NewReaderSize(audioOut, 8192)
 		frameDuration := time.Duration(audioFrame.SamplesPerChannel) * time.Second / time.Duration(audioFrame.SampleRate)
 		nextFrameTime := startTime
-
+		fmt.Printf("send pcm data, frameDuration: %dms\n", frameDuration.Milliseconds())
 		for {
 			_, err := io.ReadFull(audioReader, audioFrame.Data)
 			if err != nil {
@@ -216,12 +225,18 @@ func main() {
 			}
 
 			// 计算音频帧的时间戳
-			audioFrame.Timestamp = int64(time.Since(startTime).Milliseconds())
+			mTimestamp := int64(time.Since(startTime).Milliseconds())
+			audioFrame.Timestamp = mTimestamp
 			sender.SendPcmData(&audioFrame)
+			//fmt.Printf("send pcm data, timestamp: %d \n", mTimestamp)
 
 			// 确保帧的发送频率
-			time.Sleep(time.Until(nextFrameTime))
+			//fmt.Printf("send pcm data1, nextFrameTime: %d \n", nextFrameTime.UnixMilli())
+			mSleeptime := time.Until(nextFrameTime)
+			time.Sleep(mSleeptime)
+			//fmt.Printf("send pcm data, mSleeptime: %d \n", mSleeptime.Milliseconds())
 			nextFrameTime = nextFrameTime.Add(frameDuration)
+			//fmt.Printf("send pcm data, nextFrameTime: %d \n", nextFrameTime.UnixMilli())
 		}
 	}()
 

@@ -77,7 +77,7 @@ func RecommendBit(iwidth, iheight, ifps, ichannelType int) float64 {
 func main() {
 
 	inputFile := "./test_data/henyuandedifang.mp4"
-
+	//inputFile := "./test_data/4kvideo.mp4"
 	width, height, framerate, sampleRate, channels, err := getMediaInfo(inputFile)
 	if err != nil {
 		fmt.Printf("Error getting media info: %v\n", err)

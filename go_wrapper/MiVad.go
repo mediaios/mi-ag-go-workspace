@@ -68,10 +68,11 @@ func main() {
 	}()
 
 	vad := agoraservice.NewAudioVad(&agoraservice.AudioVadConfig{
-		StartRecognizeCount: 32,
-		MaxRecognizeCount:   80,
-		ActivePercent:       0.6,
-		InactivePercent:     0.2,
+		StartRecognizeCount:    10,
+		StopRecognizeCount:     6,
+		PreStartRecognizeCount: 10,
+		ActivePercent:          0.6,
+		InactivePercent:        0.2,
 	})
 	defer vad.Release()
 	recvCfg := agoraservice.RtcConnectionConfig{
@@ -110,7 +111,6 @@ func main() {
 				out, ret := vad.ProcessPcmFrame(frame)
 				if ret < 0 {
 					fmt.Println("vad process frame failed")
-
 				}
 				if out != nil {
 					fmt.Println("vad state %d, out frame time: %d, duration %d\n", ret, out.Timestamp, out.SamplesPerChannel/16)
@@ -126,6 +126,7 @@ func main() {
 	recvCon.Connect("", "qitest", "222")
 
 	waitSenderStop.Wait()
+	time.Sleep(5 * time.Second)
 	senderCon.Disconnect()
 	recvCon.Disconnect()
 

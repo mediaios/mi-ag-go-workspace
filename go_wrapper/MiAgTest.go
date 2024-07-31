@@ -4,16 +4,32 @@ import (
 	"agora.io/agoraservice"
 	"fmt"
 	"os"
+	"os/signal"
 	"time"
 )
 
 func main() {
+	bStop := new(bool)
+	*bStop = false
+
+	go func() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		<-c
+		*bStop = true
+		fmt.Println("Application terminated")
+		os.Exit(0)
+	}()
+
 	svcCfg := agoraservice.AgoraServiceConfig{
-		AppId: "20338919f2ca4af4b1d7ec23d8870b56",
+		AppId:         "20338919f2ca4af4b1d7ec23d8870b56",
+		AudioScenario: agoraservice.AUDIO_SCENARIO_CHORUS,
+		LogPath:       "./agora_rtc_log/agorasdk.log",
+		LogSize:       512 * 1024,
 	}
 	agoraservice.Init(&svcCfg)
 	conCfg := agoraservice.RtcConnectionConfig{
-		SubAudio:       false,
+		SubAudio:       true,
 		SubVideo:       false,
 		ClientRole:     1,
 		ChannelProfile: 1,
@@ -52,8 +68,10 @@ func main() {
 	defer con.Release()
 	sender := con.NewPcmSender()
 	defer sender.Release()
-	con.SubscribeAudio("999")
+
 	con.Connect("", "qitest", "0")
+	//con.UnsubscribeAudio("999")
+	//con.SubscribeAudio("999")
 
 	<-conSignal
 	sender.Start()
@@ -74,26 +92,44 @@ func main() {
 	}
 	defer file.Close()
 
-	sender.AdjustVolume(40)
-	sender.SetSendBufferSize(1000)
+	sender.AdjustVolume(100)
+	//sender.SetSendBufferSize(1000)
 
-	bStop := false
-	for {
-		// send 100ms audio data
-		for i := 0; i < 10; i++ {
+	sendCount := 0
+	// send 180ms audio data
+	for i := 0; i < 18; i++ {
+		dataLen, err := file.Read(frame.Data)
+		if err != nil || dataLen < 320 {
+			fmt.Println("Finished reading file:", err)
+			break
+		}
+		sendCount++
+		ret := sender.SendPcmData(&frame)
+		fmt.Printf("SendPcmData222 %d ret: %d\n", sendCount, ret)
+	}
+
+	// ffmpeg -i lit_test.m4a -ac 1 -ar 48000 -f s16le lit_test_pcm.pcm
+
+	firstSendTime := time.Now()
+	for !(*bStop) {
+		shouldSendCount := int(time.Since(firstSendTime).Milliseconds()/10) - (sendCount - 18)
+		fmt.Printf("qidebug, shouldSendCount %d \n", shouldSendCount)
+
+		for i := 0; i < shouldSendCount; i++ {
 			dataLen, err := file.Read(frame.Data)
 			if err != nil || dataLen < 320 {
 				fmt.Println("Finished reading file:", err)
-				bStop = true
-				break
+				file.Seek(0, 0)
+				i--
+				continue
 			}
 
-			sender.SendPcmData(&frame)
+			sendCount++
+			ret := sender.SendPcmData(&frame)
+			fmt.Printf("SendPcmData %d ret: %d\n", sendCount, ret)
 		}
-		if bStop {
-			break
-		}
-		time.Sleep(90 * time.Millisecond)
+		fmt.Printf("Sent %d frames this time\n", shouldSendCount)
+		time.Sleep(50 * time.Millisecond)
 	}
 	sender.Stop()
 	con.Disconnect()

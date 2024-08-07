@@ -48,12 +48,12 @@ func main() {
 				// t.Log("Playback audio frame before mixing")
 				out, ret := vad.ProcessPcmFrame(frame)
 				if ret < 0 {
-					fmt.Println("vad process frame failed")
+					fmt.Println("QiDebug,vad process frame failed")
 				}
 				if out != nil {
-					fmt.Println("vad state %d, out frame time: %d, duration %d\n", ret, out.Timestamp, out.SamplesPerChannel/16)
+					fmt.Println("QiDebug,vad state %d, out frame time: %d, duration %d\n", ret, out.Timestamp, out.SamplesPerChannel/16)
 				} else {
-					fmt.Println("vad state %d\n", ret)
+					fmt.Println("QiDebug,vad state %d\n", ret)
 				}
 			},
 		},

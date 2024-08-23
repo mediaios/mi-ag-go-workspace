@@ -105,12 +105,19 @@ func main() {
 		sender.Stop()
 	}()
 
+	//vad := agoraservice.NewAudioVad(&agoraservice.AudioVadConfig{
+	//	StartRecognizeCount:    10,
+	//	StopRecognizeCount:     6,
+	//	PreStartRecognizeCount: 10,
+	//	ActivePercent:          0.6,
+	//	InactivePercent:        0.2,
+	//})
 	vad := agoraservice.NewAudioVad(&agoraservice.AudioVadConfig{
-		StartRecognizeCount:    10,
-		StopRecognizeCount:     6,
-		PreStartRecognizeCount: 10,
-		ActivePercent:          0.6,
-		InactivePercent:        0.2,
+		StartRecognizeCount:    20,
+		StopRecognizeCount:     45,
+		PreStartRecognizeCount: 15,
+		ActivePercent:          0.8,
+		InactivePercent:        0.4,
 	})
 	defer vad.Release()
 	recvCfg := agoraservice.RtcConnectionConfig{

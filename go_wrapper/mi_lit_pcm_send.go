@@ -22,7 +22,7 @@ func main() {
 	}()
 
 	svcCfg := agoraservice.AgoraServiceConfig{
-		AppId:         "",
+		AppId:         "20338919f2ca4af4b1d7ec23d8870b56",
 		AudioScenario: agoraservice.AUDIO_SCENARIO_CHORUS,
 		LogPath:       "./agora_rtc_log/agorasdk.log",
 		LogSize:       512 * 1024,

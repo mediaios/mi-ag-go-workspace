@@ -39,34 +39,34 @@ func main() {
 			Channels:   1,
 		},
 	}
-	conSignal := make(chan struct{})
+	//conSignal := make(chan struct{})
 	conHandler := agoraservice.RtcConnectionEventHandler{
 		OnConnected: func(con *agoraservice.RtcConnection, info *agoraservice.RtcConnectionInfo, reason int) {
 			// do something
 			fmt.Println("QiDebug, Connected")
-			conSignal <- struct{}{}
+			//conSignal <- struct{}{}
 		},
 		OnDisconnected: func(con *agoraservice.RtcConnection, info *agoraservice.RtcConnectionInfo, reason int) {
 			// do something
 			fmt.Println("Disconnected")
-			conSignal <- struct{}{}
+			//conSignal <- struct{}{}
 		},
 		OnUserJoined: func(con *agoraservice.RtcConnection, uid string) {
 			fmt.Println("user joined, " + uid)
-			conSignal <- struct{}{}
+			//conSignal <- struct{}{}
 		},
 		OnUserLeft: func(con *agoraservice.RtcConnection, uid string, reason int) {
 			fmt.Println("user left, " + uid)
-			conSignal <- struct{}{}
+			//conSignal <- struct{}{}
 		},
 		OnStreamMessage: func(con *agoraservice.RtcConnection, uid string, streamId int, data []byte) {
-
+			fmt.Println("receive message")
 			fmt.Printf("receive dataStream message %d: %s\n", streamId, string(data))
-			conSignal <- struct{}{}
+			//conSignal <- struct{}{}
 		},
 		OnStreamMessageError: func(con *agoraservice.RtcConnection, uid string, streamId int, errCode int, missed int, cached int) {
 			fmt.Printf("QiDebug, occurStreamMessageError, uid:%d, streamId:%d, error:%d, missed:%d, cached:%d\n", uid, streamId, errCode, missed, cached)
-			conSignal <- struct{}{}
+			//conSignal <- struct{}{}
 		},
 	}
 	conCfg.ConnectionHandler = &conHandler
@@ -77,13 +77,18 @@ func main() {
 	*stopSend = false
 	con.Connect("", "qitest", "222")
 
-	streamId, ret := con.CreateDataStream(true, true)
+	//<-conSignal
+
+	streamId, ret := con.CreateDataStream(false, false)
 	if ret != 0 {
 		fmt.Printf("create stream failed")
 		return
 	}
 
-	for !*stopSend {
+	// 消息发送计数器
+	messageCount := 0
+
+	for !*stopSend && messageCount < 50 {
 		// 获取当前时间戳并格式化为字符串
 		currentTime := time.Now().UnixNano() / int64(time.Millisecond)
 		str := fmt.Sprintf("qi-dataStream-sei-%f", float64(currentTime)/1000.0)
@@ -94,10 +99,14 @@ func main() {
 		// 发送数据流消息
 		con.SendStreamMessage(streamId, data)
 
+		// 增加消息发送计数器
+		messageCount++
+
 		time.Sleep(250 * time.Millisecond)
 	}
 
-	<-conSignal
+	// 发送完50个消息后停止发送
+	*stopSend = true
 
 	con.Disconnect()
 

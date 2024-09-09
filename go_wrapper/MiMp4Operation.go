@@ -288,7 +288,7 @@ func main() {
 		fmt.Printf("Video FFmpeg process finished with error: %v\n", err)
 	}
 	if err := audioCmd.Wait(); err != nil {
-		fmt.Printf("Audio FFmpeg process finished with error: %v\n", err)
+		fmt.Printf("qizhangDebug,Audio FFmpeg process finished with error: %v\n", err)
 
 		sender.Stop()
 		videoSender.Stop()

@@ -1,27 +1,23 @@
 package main
 
-/*
-#cgo pkg-config: libavformat libavcodec libavutil libswresample
-#include <string.h>
-#include <stdlib.h>
-#include <libavutil/error.h>
-#include <libavutil/pixfmt.h>
-#include <libavutil/samplefmt.h>
-#include <libavutil/avutil.h>
-#include "decode_media.h"
-*/
-
+// #cgo CFLAGS: -I/usr/local/Cellar/ffmpeg/7.0.2/include -I.
+// #cgo LDFLAGS: -L/usr/local/Cellar/ffmpeg/7.0.2/lib -lavcodec -lavformat -lavutil -lswresample -L. -ldecode_media.o
+// #include <string.h>
+// #include <stdlib.h>
+// #include <libavutil/error.h>
+// #include <libavutil/pixfmt.h>
+// #include <libavutil/samplefmt.h>
+// #include <libavutil/avutil.h>
+// #include "decode_media.h"
 import "C"
 import (
+	"agora.io/agoraservice"
 	"fmt"
+	rtctokenbuilder "github.com/AgoraIO/Tools/DynamicKey/AgoraDynamicKey/go/src/RtcTokenBuilder"
 	"os"
 	"os/signal"
 	"time"
 	"unsafe"
-
-	"agora.io/agoraservice"
-
-	rtctokenbuilder "github.com/AgoraIO/Tools/DynamicKey/AgoraDynamicKey/go/src/rtctokenbuilder2"
 )
 
 func main() {
@@ -41,7 +37,7 @@ func main() {
 	appid := os.Getenv("AGORA_APP_ID")
 	cert := os.Getenv("AGORA_APP_CERTIFICATE")
 	channelName := "gosdktest"
-	userId := "0"
+	userId := "88"
 	if appid == "" {
 		fmt.Println("Please set AGORA_APP_ID environment variable, and AGORA_APP_CERTIFICATE if needed")
 		return
@@ -49,10 +45,10 @@ func main() {
 	token := ""
 	if cert != "" {
 		tokenExpirationInSeconds := uint32(3600)
-		privilegeExpirationInSeconds := uint32(3600)
+		//privilegeExpirationInSeconds := uint32(3600)
 		var err error
 		token, err = rtctokenbuilder.BuildTokenWithUserAccount(appid, cert, channelName, userId,
-			rtctokenbuilder.RolePublisher, tokenExpirationInSeconds, privilegeExpirationInSeconds)
+			rtctokenbuilder.RolePublisher, tokenExpirationInSeconds)
 		if err != nil {
 			fmt.Println("Failed to build token: ", err)
 			return
@@ -112,22 +108,22 @@ func main() {
 	videoSender := con.GetVideoSender()
 	videoSender.SetVideoEncoderConfig(&agoraservice.VideoEncoderConfig{
 		CodecType:         2,
-		Width:             360,
-		Height:            640,
-		Framerate:         30,
-		Bitrate:           800,
-		MinBitrate:        400,
+		Width:             1280,
+		Height:            720,
+		Framerate:         24,
+		Bitrate:           3000,
+		MinBitrate:        2500,
 		OrientationMode:   0,
 		DegradePreference: 0,
 	})
-
-	con.Connect(token, channelName, userId)
+	fmt.Printf("gen token %s \n", token)
+	con.Connect("", channelName, userId)
 	defer con.Disconnect()
 	<-conSignal
 	audioSender.Start()
 	videoSender.Start()
 
-	fn := C.CString("../../../test_data/test.mp4")
+	fn := C.CString("../../test_data/henyuandedifang.mp4")
 	defer C.free(unsafe.Pointer(fn))
 	decoder := C.open_media_file(fn)
 	if decoder == nil {

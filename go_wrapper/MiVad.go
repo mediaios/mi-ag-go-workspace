@@ -1,8 +1,8 @@
 package main
 
 import (
-	"agora.io/agoraservice"
 	"fmt"
+	agoraservice "github.com/AgoraIO-Extensions/Agora-Golang-Server-SDK/v2/go_sdk/agoraservice"
 	"os"
 	"sync"
 	"time"
@@ -13,24 +13,112 @@ func main() {
 	bStop := new(bool)
 	*bStop = false
 
-	svcCfg := agoraservice.AgoraServiceConfig{
-		AppId: "20338919f2ca4af4b1d7ec23d8870b56",
-	}
-	agoraservice.Init(&svcCfg)
+	userId := "222"
+
+	svcCfg := agoraservice.NewAgoraServiceConfig()
+	svcCfg.AppId = "20338919f2ca4af4b1d7ec23d8870b56"
+	agoraservice.Initialize(svcCfg)
+
 	senderCfg := agoraservice.RtcConnectionConfig{
-		SubAudio:       false,
-		SubVideo:       false,
-		ClientRole:     1,
-		ChannelProfile: 1,
-		ConnectionHandler: &agoraservice.RtcConnectionEventHandler{
-			OnConnected: func(con *agoraservice.RtcConnection, conInfo *agoraservice.RtcConnectionInfo, reason int) {
-				fmt.Println("Connected")
-			},
-			OnDisconnected: func(con *agoraservice.RtcConnection, conInfo *agoraservice.RtcConnectionInfo, reason int) {
-				fmt.Println("Disconnected")
-			},
+		AutoSubscribeAudio: true,
+		AutoSubscribeVideo: true,
+		ClientRole:         agoraservice.ClientRoleBroadcaster,
+		ChannelProfile:     agoraservice.ChannelProfileLiveBroadcasting,
+	}
+	conHandler := &agoraservice.RtcConnectionObserver{
+		OnConnected: func(con *agoraservice.RtcConnection, conInfo *agoraservice.RtcConnectionInfo, reason int) {
+			fmt.Println("Connected")
+		},
+		OnDisconnected: func(con *agoraservice.RtcConnection, conInfo *agoraservice.RtcConnectionInfo, reason int) {
+			fmt.Println("Disconnected")
+		},
+		OnConnecting: func(con *agoraservice.RtcConnection, conInfo *agoraservice.RtcConnectionInfo, reason int) {
+			fmt.Printf("Connecting, reason %d\n", reason)
+		},
+		OnReconnecting: func(con *agoraservice.RtcConnection, conInfo *agoraservice.RtcConnectionInfo, reason int) {
+			fmt.Printf("Reconnecting, reason %d\n", reason)
+		},
+		OnReconnected: func(con *agoraservice.RtcConnection, conInfo *agoraservice.RtcConnectionInfo, reason int) {
+			fmt.Printf("Reconnected, reason %d\n", reason)
+		},
+		OnConnectionLost: func(con *agoraservice.RtcConnection, conInfo *agoraservice.RtcConnectionInfo) {
+			fmt.Printf("Connection lost\n")
+		},
+		OnConnectionFailure: func(con *agoraservice.RtcConnection, conInfo *agoraservice.RtcConnectionInfo, errCode int) {
+			fmt.Printf("Connection failure, error code %d\n", errCode)
+		},
+		OnUserJoined: func(con *agoraservice.RtcConnection, uid string) {
+			fmt.Println("user joined, " + uid)
+		},
+		OnUserLeft: func(con *agoraservice.RtcConnection, uid string, reason int) {
+			fmt.Println("user left, " + uid)
 		},
 	}
+
+	var preVadDump *os.File = nil
+	var vadDump *os.File = nil
+	defer func() {
+		if preVadDump != nil {
+			preVadDump.Close()
+		}
+		if vadDump != nil {
+			vadDump.Close()
+		}
+	}()
+
+	var vadCount *int = new(int)
+	*vadCount = 0
+	audioObserver := &agoraservice.AudioFrameObserver{
+		OnPlaybackAudioFrameBeforeMixing: func(localUser *agoraservice.LocalUser, channelId string, uid string, frame *agoraservice.AudioFrame) bool {
+			// do something
+			// fmt.Printf("Playback audio frame before mixing, from userId %s\n", userId)
+			if preVadDump == nil {
+				var err error
+				preVadDump, err = os.OpenFile(fmt.Sprintf("./pre_vad_%s_%v.pcm", userId, time.Now().Format("2006-01-02-15-04-05")), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+				if err != nil {
+					fmt.Println("Failed to create dump file: ", err)
+				}
+			}
+			if preVadDump != nil {
+				fmt.Printf("PreVad: %s\n", AudioFrameToString(frame))
+				preVadDump.Write(frame.Buffer)
+			}
+			// vad
+			vadResult, state := vad.Process(frame)
+			duration := 0
+			if vadResult != nil {
+				duration = vadResult.SamplesPerChannel / 16
+			}
+			if state == agoraservice.VadStateIsSpeeking || state == agoraservice.VadStateStartSpeeking {
+				fmt.Printf("Vad result: state: %v, duration: %v\n", state, duration)
+				if vadDump == nil {
+					*vadCount++
+					var err error
+					vadDump, err = os.OpenFile(fmt.Sprintf("./vad_%d_%s_%v.pcm", *vadCount, userId, time.Now().Format("2006-01-02-15-04-05")), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+					if err != nil {
+						fmt.Println("Failed to create dump file: ", err)
+					}
+				}
+				if vadDump != nil {
+					vadDump.Write(vadResult.Buffer)
+				}
+			} else {
+				if vadDump != nil {
+					vadDump.Close()
+					vadDump = nil
+				}
+			}
+			return true
+		},
+	}
+
+	senderCon := agoraservice.NewRtcConnection(&senderCfg)
+	defer senderCon.Release()
+
+	localUser := senderCon.GetLocalUser()
+	localUser.SetPlaybackAudioFrameBeforeMixingParameters(1, 16000)
+	senderCon.RegisterObserver(conHandler)
+	localUser.RegisterAudioFrameObserver(audioObserver)
 
 	senderCon := agoraservice.NewConnection(&senderCfg)
 	defer senderCon.Release()

@@ -77,8 +77,9 @@ func RecommendBit(iwidth, iheight, ifps, ichannelType int) float64 {
 
 func main() {
 
-	mp4Path := flag.String("mp4", "./test_data/henyuandedifang.mp4", "Path to the MP4 file")
-	channel := flag.String("channel", "qitest", "Channel name")
+	//mp4Path := flag.String("mp4", "./test_data/henyuandedifang.mp4", "Path to the MP4 file")
+	mp4Path := flag.String("mp4", "./test_data/farewell.mp4", "Path to the MP4 file")
+	channel := flag.String("channel", "qitest2", "Channel name")
 	uid := flag.String("uid", "0", "uid")
 	flag.Parse()
 

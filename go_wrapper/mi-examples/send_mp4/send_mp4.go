@@ -1,7 +1,7 @@
 package main
 
-// #cgo CFLAGS: -I/usr/local/Cellar/ffmpeg/7.0.2/include -I.
-// #cgo LDFLAGS: -L/usr/local/Cellar/ffmpeg/7.0.2/lib -lavcodec -lavformat -lavutil -lswresample -L. -ldecode_media.o
+// #cgo CFLAGS: -I/opt/homebrew/opt/ffmpeg/include -I.
+// #cgo LDFLAGS: -L/opt/homebrew/opt/ffmpeg/lib -lavcodec -lavformat -lavutil -lswresample -lswscale -L. -ldecode_media.o
 // #include <string.h>
 // #include <stdlib.h>
 // #include <libavutil/error.h>
@@ -123,7 +123,9 @@ func main() {
 	audioSender.Start()
 	videoSender.Start()
 
-	fn := C.CString("../../test_data/henyuandedifang.mp4")
+	//fn := C.CString("../../test_data/henyuandedifang.mp4")
+	fn := C.CString("../../test_data/farewell.mp4")
+	//fn := C.CString("https://dwg-aigc-paas.oss-cn-hangzhou.aliyuncs.com/download/267/040688ab4b0249acab5538d14efafe79/video.mp4")
 	defer C.free(unsafe.Pointer(fn))
 	decoder := C.open_media_file(fn)
 	if decoder == nil {
